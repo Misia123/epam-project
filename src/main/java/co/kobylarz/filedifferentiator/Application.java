@@ -14,6 +14,108 @@ public class Application {
         String fileName = args[0];
         FileChecker[] listOfExtenstionChecker = initCheckers();
 
+        int maxBytesToCheck = findMaxBytesSizeForPatterns(listOfExtenstionChecker);
+        byte[] data = readFile(fileName, maxBytesToCheck);
+
+        mainChecker(extensionExtract(fileName), listOfExtenstionChecker, data);
+
+
+    }
+
+    public static int findMaxBytesSizeForPatterns(FileChecker[] listOfFileCheckers) {
+        int maxBytesToCheck = 0;
+        for (FileChecker fileChecker : listOfFileCheckers
+        ) {
+            maxBytesToCheck = Math.max(maxBytesToCheck, fileChecker.findMaxBytesCount());
+        }
+        return maxBytesToCheck;
+    }
+
+    //The main logic for extension and magic number
+    public static void mainChecker(String fileExtension, FileChecker[] listOfExtenstionChecker, byte[] data) {
+
+        FileChecker checkerForThisExtension = null;
+
+        for (FileChecker fileChecker : listOfExtenstionChecker
+        ) {
+
+            if (fileChecker.matchesExtention(fileExtension)) {
+                checkerForThisExtension = fileChecker;
+                break;
+            }
+        }
+        if (checkerForThisExtension == null) {
+            throw new IllegalArgumentException("Extenstion is not supported");
+        }
+
+        //txt never meets this condition
+        if (checkerForThisExtension.matchesMaginNumber(data)) {
+            System.out.println("A " + fileExtension + " file is a correct " + fileExtension + " file");
+            return;
+        }
+
+        //checker not fitting to extension. never meets txt
+        FileChecker otherMatchingChecker = null;
+
+        for (FileChecker fileChecker : listOfExtenstionChecker) {
+            if (fileChecker.matchesMaginNumber(data)) {
+                otherMatchingChecker = fileChecker;
+                break;
+            }
+        }
+
+        if (otherMatchingChecker != null) {
+
+            System.err.println("Real extension for " + fileExtension + " should be " + otherMatchingChecker.getExtention());
+
+        } else {
+
+            if (checkerForThisExtension.getExtention().equals("TXT")) {
+                //TXT
+                System.out.println("This seems to be a true TXT file - no other extension matching");
+
+            } else {
+
+                System.err.println("This file extension is invalid - it is not a TXT nor matches known extensions");
+
+            }
+
+        }
+
+
+    }
+
+    //Extract the extension from file name
+    public static String extensionExtract(String fileName) {
+        if (fileName.length() < 3) {
+            throw new IllegalArgumentException("File name is too short");
+        }
+//        String fileExtension = fileName.substring(fileName.length()-3).toUpperCase();
+        int lastIndexOf = fileName.lastIndexOf(".");
+        if (lastIndexOf == -1) {
+            return "";
+        }
+        //       System.out.println(fileName.substring(lastIndexOf).toUpperCase());
+        return fileName.substring(lastIndexOf + 1).toUpperCase();
+    }
+
+    //Read a file with max bytes check in pattern
+    public static byte[] readFile(String file, int bytesCountToCheck) throws IOException {
+
+        BufferedInputStream bf = null;
+        byte[] dataToCheck = null;
+        try {
+            bf = new BufferedInputStream(new FileInputStream(new File(file)));
+            dataToCheck = new byte[bytesCountToCheck];
+            bf.read(dataToCheck);
+            bf.close();
+        } catch (FileNotFoundException e) {
+            System.err.println("There is no such file");
+            System.exit(1);
+            //     e.printStackTrace();
+        }
+
+        return dataToCheck;
 
     }
 
